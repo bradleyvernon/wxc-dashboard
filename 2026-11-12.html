@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forecast dashboard</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3f0; --surface: #fcfcfb; --line: #e4e2dc; --grid: #ebe9e4;
+  --text: #0b0b0b; --text2: #52514e; --muted: #8b8a84;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --accent: #2a78d6; --accent-wash: #e6f0fc;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #111110; --surface: #1a1a19; --line: #2e2e2b; --grid: #262624;
+    --text: #f0efec; --text2: #c3c2b7; --muted: #8b8a84;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    --accent: #3987e5; --accent-wash: #16263b;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1040px; margin: 0 auto; padding: 40px 24px 80px; }
+h1 { font-size: 34px; line-height: 1.15; margin: 0 0 6px; font-weight: 650; letter-spacing: -0.01em; }
+h1 span { color: var(--text2); font-weight: 400; }
+.meta { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
+h2 { font-size: 20px; margin: 0 0 2px; font-weight: 650; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+section { margin-top: 44px; }
+
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 12px; text-align: left;
+        cursor: pointer; font: inherit; color: inherit; }
+.tile:hover { border-color: var(--muted); }
+.tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-wash); }
+.tile .lab { font-size: 13px; color: var(--text2); }
+.tile .val { font-size: 40px; font-weight: 650; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.tile .val small { font-size: 16px; font-weight: 400; color: var(--text2); margin-left: 3px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: none; padding: 6px 13px; font: inherit; font-size: 13px; color: var(--text2); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-wash); color: var(--text); font-weight: 600; }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px 5px 10px;
+        background: var(--surface); font: inherit; font-size: 13px; color: var(--text); cursor: pointer; }
+.chip i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.chip[aria-pressed="false"] { color: var(--muted); }
+.chip[aria-pressed="false"] i { background: var(--line) !important; }
+
+.chartwrap { position: relative; }
+svg { display: block; width: 100%; height: auto; }
+svg text { font: 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--muted); }
+svg text.strong { fill: var(--text); font-weight: 650; font-size: 14px; }
+svg text.ink { fill: var(--text2); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+       padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.12); min-width: 150px; display: none; z-index: 2; }
+.tip .d { color: var(--text2); font-size: 12px; margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tip .r i { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+.tip .r b { font-variant-numeric: tabular-nums; min-width: 44px; }
+.tip .r span { color: var(--text2); }
+
+.compare { display: grid; grid-template-columns: 1fr 270px; gap: 16px; align-items: start; }
+.panel h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin: 0 0 8px; }
+.panel table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.panel th { font-size: 11px; font-weight: 500; color: var(--muted); text-align: right; padding: 0 0 6px; }
+.panel th:first-child { text-align: left; }
+.panel td { padding: 9px 0; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+.panel td:first-child { text-align: left; }
+.panel td.name i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.panel td.err { font-weight: 650; font-size: 17px; }
+.panel td.sm { color: var(--text2); font-size: 13px; }
+.panel tr.off td { color: var(--muted); }
+.panel tr.off td.name i { background: var(--line) !important; }
+.panel .note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .compare { grid-template-columns: 1fr; }
+  h1 { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <p class="meta" id="meta"></p>
+  <div class="tiles" id="tiles"></div>
+
+  <section>
+    <h2>Confidence</h2>
+    <p class="hint" id="hint1"></p>
+    <div class="card">
+      <div class="controls"><div class="seg" id="initseg"></div></div>
+      <div class="chartwrap"><svg id="chart1" viewBox="0 0 980 380"></svg><div class="tip" id="tip1"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Model comparison</h2>
+    <p class="hint" id="hint2"></p>
+    <div class="controls">
+      <div class="seg" id="varseg"></div>
+      <div class="seg" id="viewseg"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="compare">
+      <div class="card"><div class="chartwrap"><svg id="chart2" viewBox="0 0 700 380"></svg><div class="tip" id="tip2"></div></div></div>
+      <div class="card panel"><h3 id="panelhead"></h3><table id="paneltable"></table><p class="note" id="panelnote"></p></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const DATA = {"city": "Yakutat", "code": "PAYA", "target": "2026-11-12", "today": "2026-11-11", "generated": "Nov 11, 3:42 PM MT", "inits": ["00Z", "06Z", "12Z", "18Z"], "init_date": "Nov 11", "submitted": {"TMAX": "45", "TMIN": "36", "WIND": "14", "PRCP": "0.67"}, "ours": {"TMAX": {"00Z": {"forecast": 44.8, "members": [44.8, 45.4, 45.5, 45.3, 45.4, 45.1, 44.6, 43.9, 44.1, 44.2, 43.9, 44.0, 44.8, 45.4, 45.3, 45.6, 44.7, 44.1, 44.1, 43.8, 45.6]}, "06Z": {"forecast": 45.1, "members": [45.4, 45.6, 46.3, 45.5, 46.1, 45.2, 45.2, 44.4, 45.2, 44.4, 44.2, 44.8, 45.4, 45.6, 45.9, 45.8, 45.1, 44.7, 45.1, 44.7, 45.2]}, "12Z": {"forecast": 44.4, "members": [44.0, 44.5, 44.9, 44.1, 44.9, 44.5, 44.4, 43.5, 44.7, 44.4, 43.7, 44.0, 44.1, 44.3, 44.9, 44.4, 44.4, 43.7, 44.3, 44.1, 45.0]}, "18Z": {"forecast": 45.3, "members": [44.9, 45.2, 45.9, 45.0, 45.7, 45.0, 45.2, 44.0, 45.4, 44.9, 44.5, 44.7, 44.9, 45.2, 45.8, 45.3, 45.1, 44.3, 45.3, 45.0, 46.3]}, "Blend": {"forecast": 44.7, "members": [44.8, 45.2, 45.6, 45.0, 45.5, 44.9, 44.8, 45.1, 45.5, 45.3, 44.9, 44.0, 44.9, 44.5, 44.1, 44.4, 44.8, 44.2, 44.7, 44.4, 45.5]}}, "TMIN": {"00Z": {"forecast": 35.5, "members": [36.6, 36.4, 36.9, 36.3, 37.0, 37.1, 36.2, 34.9, 35.9, 35.1, 34.8, 35.4, 36.2, 36.6, 36.1, 37.1, 34.9, 35.3, 35.2, 35.2, 35.4]}, "06Z": {"forecast": 35.7, "members": [37.4, 36.5, 37.5, 36.2, 37.1, 37.4, 35.7, 35.7, 36.1, 35.8, 34.8, 36.4, 36.5, 36.5, 36.6, 37.1, 35.4, 34.8, 35.2, 36.2, 35.1]}, "12Z": {"forecast": 36.0, "members": [36.5, 35.9, 36.1, 35.9, 36.5, 36.4, 36.3, 35.9, 36.2, 36.3, 35.8, 36.5, 35.9, 35.9, 36.2, 36.6, 36.1, 35.5, 36.0, 36.5, 35.3]}, "18Z": {"forecast": 35.9, "members": [37.1, 36.3, 37.2, 36.5, 37.2, 36.8, 36.4, 35.0, 36.2, 35.7, 35.5, 36.5, 36.5, 36.3, 36.9, 37.1, 36.3, 35.4, 35.9, 35.9, 34.9]}, "Blend": {"forecast": 35.9, "members": [36.9, 36.3, 36.9, 36.2, 37.0, 36.9, 36.3, 36.3, 36.4, 37.0, 36.1, 35.4, 36.1, 35.7, 35.2, 36.2, 35.7, 35.2, 35.5, 36.0, 35.2]}}, "WIND": {"00Z": {"forecast": 14.4, "members": [13.8, 12.8, 13.2, 13.9, 13.9, 14.4, 15.1, 14.6, 15.2, 14.7, 14.5, 13.9, 13.9, 13.6, 13.3, 14.6, 14.4, 14.1, 14.8, 15.4, 15.2]}, "06Z": {"forecast": 14.0, "members": [13.0, 12.4, 12.6, 13.8, 13.1, 13.7, 14.0, 14.8, 13.9, 14.0, 12.9, 14.3, 13.0, 12.9, 13.2, 14.1, 13.6, 13.6, 13.2, 14.1, 15.3]}, "12Z": {"forecast": 14.1, "members": [13.8, 13.5, 13.3, 14.0, 14.3, 14.3, 14.5, 15.0, 14.3, 14.9, 13.9, 14.1, 13.5, 14.0, 13.8, 14.2, 14.4, 14.1, 14.1, 14.9, 14.3]}, "18Z": {"forecast": 14.2, "members": [13.8, 13.7, 13.6, 14.3, 13.9, 14.3, 14.3, 14.1, 14.6, 15.0, 13.0, 14.5, 13.7, 14.2, 14.4, 14.4, 14.2, 13.8, 14.2, 15.0, 14.6]}, "Blend": {"forecast": 14.2, "members": [13.6, 13.1, 13.2, 14.0, 13.8, 14.2, 13.6, 13.7, 13.7, 14.3, 14.5, 14.6, 14.5, 14.7, 13.6, 14.2, 14.1, 13.9, 14.1, 14.9, 14.8]}}, "PRCP": {"00Z": {"forecast": 0.59, "members": [0.62, 0.6, 0.52, 0.55, 0.65, 0.67, 0.69, 0.56, 0.61, 0.46, 0.55, 0.54, 0.67, 0.68, 0.55, 0.57, 0.58, 0.49, 0.63, 0.6, 0.58]}, "06Z": {"forecast": 0.47, "members": [0.48, 0.48, 0.4, 0.45, 0.49, 0.53, 0.54, 0.45, 0.46, 0.39, 0.44, 0.5, 0.47, 0.52, 0.44, 0.47, 0.52, 0.43, 0.49, 0.47, 0.49]}, "12Z": {"forecast": 0.71, "members": [0.76, 0.78, 0.66, 0.72, 0.67, 0.76, 0.77, 0.72, 0.66, 0.57, 0.59, 0.7, 0.7, 0.82, 0.69, 0.76, 0.64, 0.67, 0.7, 0.67, 0.59]}, "18Z": {"forecast": 0.66, "members": [0.71, 0.73, 0.61, 0.71, 0.61, 0.71, 0.72, 0.67, 0.61, 0.48, 0.43, 0.67, 0.7, 0.77, 0.67, 0.75, 0.67, 0.6, 0.65, 0.58, 0.56]}, "Blend": {"forecast": 0.67, "members": [0.64, 0.65, 0.55, 0.61, 0.6, 0.67, 0.64, 0.7, 0.59, 0.64, 0.68, 0.6, 0.58, 0.47, 0.5, 0.6, 0.6, 0.55, 0.62, 0.58, 0.55]}}}, "obs": [{"date": "2026-11-04", "TMAX": 47.0, "TMIN": 41.0, "WIND": 14.0, "PRCP": 0.51}, {"date": "2026-11-05", "TMAX": 46.0, "TMIN": 40.0, "WIND": 14.0, "PRCP": 0.75}, {"date": "2026-11-06", "TMAX": 46.0, "TMIN": 40.0, "WIND": 24.0, "PRCP": 1.17}, {"date": "2026-11-07", "TMAX": 45.0, "TMIN": 36.0, "WIND": 15.0, "PRCP": 0.36}, {"date": "2026-11-08", "TMAX": 43.0, "TMIN": 32.0, "WIND": 9.0, "PRCP": 0.0}, {"date": "2026-11-09", "TMAX": 48.0, "TMIN": 32.0, "WIND": 31.0, "PRCP": 0.45}, {"date": "2026-11-10", "TMAX": 50.0, "TMIN": 36.0, "WIND": 19.0, "PRCP": 0.89}], "so_far": {"TMAX": 47.0, "TMIN": 40.0, "WIND": 21.0, "PRCP": 0.23, "through": "22:11Z"}, "systems": {"Ours": {"2026-11-04": {"TMAX": 47.9, "TMIN": 38.7, "WIND": 15.1, "PRCP": 0.86}, "2026-11-05": {"TMAX": 47.7, "TMIN": 39.9, "WIND": 16.8, "PRCP": 0.58}, "2026-11-06": {"TMAX": 48.0, "TMIN": 41.1, "WIND": 22.9, "PRCP": 0.98}, "2026-11-07": {"TMAX": 46.8, "TMIN": 35.3, "WIND": 17.6, "PRCP": 0.58}, "2026-11-08": {"TMAX": 42.6, "TMIN": 30.9, "WIND": 12.0, "PRCP": 0.01}, "2026-11-09": {"TMAX": 48.1, "TMIN": 35.2, "WIND": 29.9, "PRCP": 0.43}, "2026-11-10": {"TMAX": 47.7, "TMIN": 39.0, "WIND": 24.3, "PRCP": 0.47}, "2026-11-12": {"TMAX": 44.7, "TMIN": 35.9, "WIND": 14.2, "PRCP": 0.67}}, "ECMWF": {"2026-11-04": {"TMAX": 48.7, "TMIN": 43.4, "WIND": 13.7, "PRCP": 0.8}, "2026-11-05": {"TMAX": 45.4, "TMIN": 41.3, "WIND": 11.8, "PRCP": 0.61}, "2026-11-06": {"TMAX": 46.5, "TMIN": 42.2, "WIND": 20.6, "PRCP": 1.0}, "2026-11-07": {"TMAX": 44.6, "TMIN": 38.8, "WIND": 16.7, "PRCP": 0.7}, "2026-11-08": {"TMAX": 42.4, "TMIN": 38.1, "WIND": 12.7, "PRCP": 0.06}, "2026-11-09": {"TMAX": 47.6, "TMIN": 38.8, "WIND": 35.6, "PRCP": 0.42}, "2026-11-10": {"TMAX": 47.9, "TMIN": 39.8, "WIND": 32.9, "PRCP": 0.6}, "2026-11-12": {"TMAX": 43.8, "TMIN": 37.2, "WIND": 13.5, "PRCP": 0.84}}, "GFS": {"2026-11-04": {"TMAX": 46.6, "TMIN": 40.0, "WIND": 17.5, "PRCP": 0.73}, "2026-11-05": {"TMAX": 47.4, "TMIN": 40.0, "WIND": 20.2, "PRCP": 0.3}, "2026-11-06": {"TMAX": 46.6, "TMIN": 40.1, "WIND": 33.0, "PRCP": 1.02}, "2026-11-07": {"TMAX": 46.1, "TMIN": 40.0, "WIND": 23.4, "PRCP": 0.95}, "2026-11-08": {"TMAX": 43.3, "TMIN": 38.4, "WIND": 16.0, "PRCP": 0.02}, "2026-11-09": {"TMAX": 48.3, "TMIN": 38.8, "WIND": 27.6, "PRCP": 0.12}, "2026-11-10": {"TMAX": 47.9, "TMIN": 41.1, "WIND": 33.2, "PRCP": 0.38}, "2026-11-12": {"TMAX": 46.2, "TMIN": 39.4, "WIND": 18.9, "PRCP": 0.57}}, "HRRR": {"2026-11-04": {"TMAX": 44.7, "TMIN": 38.4, "WIND": 14.6, "PRCP": 0.85}, "2026-11-05": {"TMAX": 43.1, "TMIN": 38.4, "WIND": 13.3, "PRCP": 0.45}, "2026-11-06": {"TMAX": 44.1, "TMIN": 39.4, "WIND": 15.9, "PRCP": 0.35}, "2026-11-07": {"TMAX": 42.8, "TMIN": 34.4, "WIND": 16.1, "PRCP": 0.66}, "2026-11-08": {"TMAX": 41.6, "TMIN": 33.7, "WIND": 8.7, "PRCP": 0.04}, "2026-11-09": {"TMAX": 44.1, "TMIN": 34.4, "WIND": 27.7, "PRCP": 0.42}, "2026-11-10": {"TMAX": 43.9, "TMIN": 39.0, "WIND": 21.9, "PRCP": 0.27}, "2026-11-12": {"TMAX": 40.7, "TMIN": 34.6, "WIND": 12.8, "PRCP": 0.57}}, "MOS": {"2026-11-04": {"TMAX": 46.2, "TMIN": 40.5, "WIND": 12.8, "PRCP": null}, "2026-11-05": {"TMAX": 46.8, "TMIN": 38.2, "WIND": 11.0, "PRCP": null}, "2026-11-06": {"TMAX": 47.5, "TMIN": 39.2, "WIND": 18.2, "PRCP": null}, "2026-11-07": {"TMAX": 45.0, "TMIN": 39.2, "WIND": 12.2, "PRCP": null}, "2026-11-08": {"TMAX": 42.5, "TMIN": 31.2, "WIND": 5.0, "PRCP": null}, "2026-11-09": {"TMAX": 46.0, "TMIN": 32.8, "WIND": 20.8, "PRCP": null}, "2026-11-10": {"TMAX": 46.2, "TMIN": 38.2, "WIND": 19.2, "PRCP": null}, "2026-11-12": {"TMAX": 42.8, "TMIN": 38.2, "WIND": 10.8, "PRCP": null}}}};
+
+const VARS = ["TMAX", "TMIN", "WIND", "PRCP"];
+const VAR_NAME = { TMAX: "High", TMIN: "Low", WIND: "Wind", PRCP: "Precip" };
+const VAR_UNIT = { TMAX: "°F", TMIN: "°F", WIND: "kt", PRCP: "in" };
+const SYSTEMS = ["Ours", "ECMWF", "GFS", "HRRR", "MOS"];
+const SYSTEM_COLOR = { Ours: "var(--s1)", ECMWF: "var(--s2)", GFS: "var(--s3)", HRRR: "var(--s4)", MOS: "var(--s5)" };
+const state = { variable: "TMAX", init: "Blend", view: "Error", on: { Ours: true, ECMWF: true, GFS: true, HRRR: true, MOS: true } };
+
+// ---------- small helpers
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(parent, tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const a in attrs) e.setAttribute(a, attrs[a]);
+  if (text !== undefined) e.textContent = text;
+  parent.appendChild(e);
+  return e;
+}
+function htmlEl(parent, tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  parent.appendChild(e);
+  return e;
+}
+function fmt(v, k, signed) {
+  if (v === null || v === undefined) return "–";
+  const s = k === "PRCP" ? v.toFixed(2) : v.toFixed(Math.abs(v) % 1 < 0.05 || Math.abs(v) % 1 > 0.95 ? 0 : 1);
+  return (signed && v > 0 ? "+" : "") + s;
+}
+function dayLabel(iso, long) {
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-US", long ? { weekday: "long", month: "long", day: "numeric" } : { weekday: "short", month: "numeric", day: "numeric" });
+}
+function niceTicks(lo, hi, k) {
+  if (hi - lo < 1e-9) { hi = lo + 1; }
+  const raw = (hi - lo) / 5;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  let step = mag;
+  for (const m of [1, 2, 5, 10]) { if (m * mag >= raw) { step = m * mag; break; } }
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step;
+  const ticks = [];
+  for (let v = a; v <= b + step / 2; v += step) ticks.push(Math.round(v / step) * step);
+  return ticks;
+}
+function tickText(v, k) { return k === "PRCP" ? v.toFixed(Math.abs(v * 10 % 1) > 0.01 ? 2 : 1) : String(Math.round(v * 10) / 10); }
+function segmented(id, options, key, after) {
+  const box = document.getElementById(id);
+  box.replaceChildren();
+  for (const o of options) {
+    const b = htmlEl(box, "button", "", o.label);
+    b.setAttribute("aria-pressed", state[key] === o.value);
+    b.onclick = () => { state[key] = o.value; after(); };
+  }
+}
+function showTip(tip, wrap, svg, xSvg, build) {
+  tip.replaceChildren();
+  build(tip);
+  tip.style.display = "block";
+  const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+  const x = xSvg * scale, w = tip.offsetWidth, W = wrap.offsetWidth;
+  tip.style.left = (x + 14 + w > W ? x - 14 - w : x + 14) + "px";
+  tip.style.top = "14px";
+}
+function tipRow(tip, color, value, label) {
+  const r = htmlEl(tip, "div", "r");
+  const i = htmlEl(r, "i"); i.style.background = color || "transparent";
+  htmlEl(r, "b", "", value);
+  htmlEl(r, "span", "", label);
+}
+function frame(svg, W, H, pad, ticks, k, y) {
+  for (const t of ticks) {
+    svgEl(svg, "line", { x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t), stroke: "var(--grid)", "stroke-width": 1 });
+    svgEl(svg, "text", { x: pad.l - 8, y: y(t) + 4, "text-anchor": "end" }, tickText(t, k));
+    if (t === ticks[ticks.length - 1]) svgEl(svg, "text", { x: pad.l + 2, y: y(t) - 6 }, VAR_UNIT[k]);
+  }
+}
+
+// ---------- header + tiles
+function drawHeader() {
+  const h = document.getElementById("title");
+  h.textContent = DATA.city + " (" + DATA.code + ") ";
+  htmlEl(h, "span", "", "for " + dayLabel(DATA.target, true));
+  document.title = DATA.code + " " + DATA.target;
+  document.getElementById("meta").textContent = "Generated " + DATA.generated + "  ·  inits " + DATA.inits.join(", ") + " " + DATA.init_date;
+  const tiles = document.getElementById("tiles");
+  tiles.replaceChildren();
+  for (const k of VARS) {
+    const b = htmlEl(tiles, "button", "tile");
+    b.setAttribute("aria-pressed", state.variable === k);
+    htmlEl(b, "div", "lab", VAR_NAME[k]);
+    const v = htmlEl(b, "div", "val", DATA.submitted[k]);
+    htmlEl(v, "small", "", VAR_UNIT[k]);
+    b.onclick = () => { state.variable = k; drawAll(); };
+  }
+}
+
+// ---------- section 1: spread inside our model
+function drawConfidence() {
+  const k = state.variable, unit = VAR_UNIT[k];
+  segmented("initseg", [{ label: "Blend", value: "Blend" }].concat(DATA.inits.map(i => ({ label: i, value: i }))), "init", drawAll);
+  const view = DATA.ours[k][state.init];
+  document.getElementById("hint1").textContent = VAR_NAME[k] + ": observed, then every one of our " + view.members.length +
+    " models fanned out to the forecast day (the XGB plus every NN seed).";
+
+  const svg = document.getElementById("chart1");
+  svg.replaceChildren();
+  const W = 980, H = 380, pad = { l: 46, r: 150, t: 18, b: 34 };
+  const obs = DATA.obs.slice(-5).filter(o => o[k] !== null);
+  const cols = obs.map(o => ({ date: o.date, value: o[k], kind: "obs" }));
+  if (DATA.so_far && DATA.so_far[k] !== null) cols.push({ date: DATA.today, value: DATA.so_far[k], kind: "sofar" });
+  cols.push({ date: DATA.target, value: view.forecast, kind: "fc" });
+
+  // y range holds every init's view so the axis does not jump when clicking through inits
+  let lo = Infinity, hi = -Infinity;
+  for (const c of cols) if (c.kind !== "fc") { lo = Math.min(lo, c.value); hi = Math.max(hi, c.value); }
+  for (const name in DATA.ours[k]) {
+    const v = DATA.ours[k][name];
+    for (const x of v.members.concat([v.forecast])) if (x !== null) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
+  }
+  if (k === "PRCP") lo = 0;
+  const ticks = niceTicks(lo, hi, k);
+  const y0 = ticks[0], y1 = ticks[ticks.length - 1];
+  const y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - y0) / (y1 - y0));
+  const x = i => pad.l + 30 + (W - pad.l - pad.r - 30) * i / (cols.length - 1);
+  frame(svg, W, H, pad, ticks, k, y);
+  cols.forEach((c, i) => {
+    const t = svgEl(svg, "text", { x: x(i), y: H - 10, "text-anchor": "middle" }, c.kind === "sofar" ? "Today so far" : dayLabel(c.date));
+    if (c.kind === "fc") t.setAttribute("class", "strong");
+  });
+
+  const iT = cols.length - 1, iA = iT - 1, xA = x(iA), yA = y(cols[iA].value), xT = x(iT), mid = (xT - xA) * 0.55;
+  const curve = v => "C" + (xA + mid) + " " + yA + "," + (xT - mid) + " " + y(v) + "," + xT + " " + y(v);
+  // one line per individual model
+  for (const m of view.members) svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(m), fill: "none", stroke: "var(--s1)", "stroke-width": 1.2, opacity: 0.45 });
+  svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(view.forecast), fill: "none", stroke: "var(--s1)", "stroke-width": 2.5 });
+
+  // observed line (solid through verified days, dashed to today so far)
+  const solid = cols.filter(c => c.kind === "obs");
+  if (solid.length > 1) svgEl(svg, "path", { d: solid.map((c, i) => (i ? "L" : "M") + x(i) + " " + y(c.value)).join(""), fill: "none", stroke: "var(--text)", "stroke-width": 2, "stroke-linejoin": "round" });
+  if (cols[iA].kind === "sofar" && solid.length)
+    svgEl(svg, "line", { x1: x(iA - 1), y1: y(cols[iA - 1].value), x2: xA, y2: yA, stroke: "var(--text)", "stroke-width": 2, "stroke-dasharray": "5 5" });
+  cols.forEach((c, i) => {
+    if (c.kind === "obs") svgEl(svg, "circle", { cx: x(i), cy: y(c.value), r: 4, fill: "var(--text)", stroke: "var(--surface)", "stroke-width": 2 });
+    if (c.kind === "sofar") svgEl(svg, "circle", { cx: x(i), cy: y(c.value), r: 4, fill: "var(--surface)", stroke: "var(--text)", "stroke-width": 2 });
+  });
+  svgEl(svg, "circle", { cx: xT, cy: y(view.forecast), r: 6, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 });
+
+  // labels right of the fan, kept from overlapping
+  const yF = y(view.forecast);
+  const ms = view.members.filter(m => m !== null), mHi = Math.max(...ms), mLo = Math.min(...ms);
+  const yHi = Math.min(y(mHi) + 4, yF - 15), yLo = Math.max(y(mLo) + 4, yF + 23);
+  svgEl(svg, "text", { x: xT + 14, y: yF + 5, class: "strong" }, fmt(view.forecast, k) + " " + unit);
+  svgEl(svg, "text", { x: xT + 14, y: yHi, class: "ink" }, fmt(mHi, k) + "  highest");
+  svgEl(svg, "text", { x: xT + 14, y: yLo, class: "ink" }, fmt(mLo, k) + "  lowest");
+
+  // hover
+  const tip = document.getElementById("tip1"), wrap = svg.parentNode;
+  const hair = svgEl(svg, "line", { y1: pad.t, y2: H - pad.b, stroke: "var(--muted)", "stroke-width": 1, visibility: "hidden" });
+  svg.onpointermove = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    let i = 0;
+    cols.forEach((c, j) => { if (Math.abs(x(j) - px) < Math.abs(x(i) - px)) i = j; });
+    const c = cols[i];
+    hair.setAttribute("x1", x(i)); hair.setAttribute("x2", x(i)); hair.setAttribute("visibility", "visible");
+    showTip(tip, wrap, svg, x(i), t => {
+      if (c.kind === "obs") { htmlEl(t, "div", "d", dayLabel(c.date)); tipRow(t, "var(--text)", fmt(c.value, k) + " " + unit, "observed"); }
+      if (c.kind === "sofar") { htmlEl(t, "div", "d", "Today through " + DATA.so_far.through); tipRow(t, "var(--text)", fmt(c.value, k) + " " + unit, "so far"); }
+      if (c.kind === "fc") {
+        htmlEl(t, "div", "d", dayLabel(c.date) + "  ·  " + state.init);
+        tipRow(t, "var(--s1)", fmt(view.forecast, k) + " " + unit, "our forecast");
+        if (ms.length) tipRow(t, null, fmt(Math.min(...ms), k) + " – " + fmt(Math.max(...ms), k), ms.length + " models");
+      }
+    });
+  };
+  svg.onpointerleave = () => { tip.style.display = "none"; hair.setAttribute("visibility", "hidden"); };
+}
+
+// ---------- section 2: model comparison
+function errorOf(system, date, k) {
+  const f = DATA.systems[system][date], o = DATA.obs.find(d => d.date === date);
+  if (!f || !o || f[k] === null || o[k] === null) return null;
+  return f[k] - o[k];
+}
+function drawCompare() {
+  const k = state.variable, unit = VAR_UNIT[k];
+  segmented("varseg", VARS.map(v => ({ label: VAR_NAME[v], value: v })), "variable", drawAll);
+  segmented("viewseg", [{ label: "Error", value: "Error" }, { label: "Forecast", value: "Forecast" }], "view", drawAll);
+  const chips = document.getElementById("chips");
+  chips.replaceChildren();
+  for (const s of SYSTEMS) {
+    const b = htmlEl(chips, "button", "chip");
+    const i = htmlEl(b, "i"); i.style.background = SYSTEM_COLOR[s];
+    b.appendChild(document.createTextNode(s));
+    b.setAttribute("aria-pressed", state.on[s]);
+    b.onclick = () => { state.on[s] = !state.on[s]; drawAll(); };
+  }
+  const obsDays = DATA.obs.filter(o => o[k] !== null && SYSTEMS.some(s => errorOf(s, o.date, k) !== null));
+  const isError = state.view === "Error";
+  document.getElementById("hint2").textContent = isError
+    ? VAR_NAME[k] + ": forecast minus observed for each day. Above zero = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + "."
+    : VAR_NAME[k] + ": what each system forecast, against what was observed.";
+
+  const svg = document.getElementById("chart2");
+  svg.replaceChildren();
+  const W = 700, H = 380, pad = { l: 46, r: 20, t: 18, b: 34 };
+  const dates = obsDays.map(o => o.date).concat(isError ? [] : [DATA.target]);
+  const shown = SYSTEMS.filter(s => state.on[s]);
+  const value = (s, date) => {
+    if (isError) return errorOf(s, date, k);
+    const f = DATA.systems[s][date];
+    return f ? f[k] : null;
+  };
+  let lo = Infinity, hi = -Infinity;
+  for (const s of shown) for (const d of dates) { const v = value(s, d); if (v !== null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }
+  if (isError) { lo = Math.min(lo, k === "PRCP" ? -0.1 : -1); hi = Math.max(hi, k === "PRCP" ? 0.1 : 1); }
+  else { for (const o of obsDays) { lo = Math.min(lo, o[k]); hi = Math.max(hi, o[k]); } if (k === "PRCP") lo = 0; }
+  if (!isFinite(lo)) { lo = 0; hi = 1; }
+  const ticks = niceTicks(lo, hi, k);
+  const y0 = ticks[0], y1 = ticks[ticks.length - 1];
+  const y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - y0) / (y1 - y0));
+  const x = i => pad.l + 28 + (W - pad.l - pad.r - 56) * (dates.length > 1 ? i / (dates.length - 1) : 0.5);
+  frame(svg, W, H, pad, ticks, k, y);
+  if (isError) svgEl(svg, "line", { x1: pad.l, x2: W - pad.r, y1: y(0), y2: y(0), stroke: "var(--text2)", "stroke-width": 1.5 });
+  dates.forEach((d, i) => {
+    const t = svgEl(svg, "text", { x: x(i), y: H - 10, "text-anchor": "middle" }, dayLabel(d));
+    if (d === DATA.target) t.setAttribute("class", "strong");
+  });
+  function series(points, color, width) {
+    let d = "", pen = false;
+    points.forEach((v, i) => { if (v === null) { pen = false; return; } d += (pen ? "L" : "M") + x(i) + " " + y(v); pen = true; });
+    svgEl(svg, "path", { d: d, fill: "none", stroke: color, "stroke-width": width, "stroke-linejoin": "round" });
+    points.forEach((v, i) => { if (v !== null) svgEl(svg, "circle", { cx: x(i), cy: y(v), r: 4, fill: color, stroke: "var(--surface)", "stroke-width": 2 }); });
+  }
+  for (const s of shown.slice().reverse()) series(dates.map(d => value(s, d)), SYSTEM_COLOR[s], s === "Ours" ? 3 : 2);
+  if (!isError) series(dates.map(d => { const o = obsDays.find(q => q.date === d); return o ? o[k] : null; }), "var(--text)", 2);
+
+  // hover: one tooltip, every visible system
+  const tip = document.getElementById("tip2"), wrap = svg.parentNode;
+  const hair = svgEl(svg, "line", { y1: pad.t, y2: H - pad.b, stroke: "var(--muted)", "stroke-width": 1, visibility: "hidden" });
+  svg.onpointermove = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    let i = 0;
+    dates.forEach((d, j) => { if (Math.abs(x(j) - px) < Math.abs(x(i) - px)) i = j; });
+    const date = dates[i], o = obsDays.find(q => q.date === date);
+    hair.setAttribute("x1", x(i)); hair.setAttribute("x2", x(i)); hair.setAttribute("visibility", "visible");
+    showTip(tip, wrap, svg, x(i), t => {
+      htmlEl(t, "div", "d", dayLabel(date) + (o ? "  ·  observed " + fmt(o[k], k) + " " + unit : "  ·  forecast day"));
+      for (const s of shown) {
+        const f = DATA.systems[s][date], e = errorOf(s, date, k);
+        if (!f || f[k] === null) { tipRow(t, SYSTEM_COLOR[s], "–", s); continue; }
+        if (o) tipRow(t, SYSTEM_COLOR[s], fmt(e, k, true), s + "  (forecast " + fmt(f[k], k) + ")");
+        else tipRow(t, SYSTEM_COLOR[s], fmt(f[k], k), s);
+      }
+    });
+  };
+  svg.onpointerleave = () => { tip.style.display = "none"; hair.setAttribute("visibility", "hidden"); };
+
+  // right-hand panel: trailing mean error per system
+  document.getElementById("panelhead").textContent = "Trailing error, last " + obsDays.length + " days (" + unit + ")";
+  const table = document.getElementById("paneltable");
+  table.replaceChildren();
+  const head = htmlEl(table, "tr");
+  for (const h of ["", "Mean miss", "Bias", dayLabel(DATA.target).split(" ")[0] + " fcst"]) htmlEl(head, "th", "", h);
+  for (const s of SYSTEMS) {
+    const errs = obsDays.map(o => errorOf(s, o.date, k)).filter(e => e !== null);
+    const tr = htmlEl(table, "tr", state.on[s] ? "" : "off");
+    const name = htmlEl(tr, "td", "name");
+    const i = htmlEl(name, "i"); i.style.background = SYSTEM_COLOR[s];
+    name.appendChild(document.createTextNode(s));
+    const mae = errs.length ? errs.reduce((a, e) => a + Math.abs(e), 0) / errs.length : null;
+    const bias = errs.length ? errs.reduce((a, e) => a + e, 0) / errs.length : null;
+    htmlEl(tr, "td", "err", mae === null ? "–" : mae.toFixed(k === "PRCP" ? 2 : 1));
+    htmlEl(tr, "td", "sm", bias === null ? "–" : (bias > 0 ? "+" : "") + bias.toFixed(k === "PRCP" ? 2 : 1));
+    const f = DATA.systems[s][DATA.target];
+    htmlEl(tr, "td", "sm", f ? fmt(f[k], k) : "–");
+  }
+  document.getElementById("panelnote").textContent = k === "WIND"
+    ? "Mean miss = average size of the error. Raw model wind is 10 m sustained, not the contest 2-min max, so raw models run low."
+    : k === "PRCP" ? "Mean miss = average size of the error. MOS has no precip amount." : "Mean miss = average size of the error.";
+}
+
+function drawAll() { drawHeader(); drawConfidence(); drawCompare(); }
+// optional start state in the address, e.g. #PRCP,18Z,Forecast
+for (const part of decodeURIComponent(location.hash.slice(1)).split(",")) {
+  if (VARS.includes(part)) state.variable = part;
+  if (part === "Blend" || DATA.inits.includes(part)) state.init = part;
+  if (part === "Error" || part === "Forecast") state.view = part;
+}
+drawAll();
+</script>
+</body>
+</html>
