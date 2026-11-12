@@ -334,16 +334,17 @@ function drawCompare() {
   const obsDays = DATA.obs.filter(o => o[k] !== null && SYSTEMS.some(s => errorOf(s, o.date, k) !== null));
   const isError = state.view === "Error";
   document.getElementById("hint2").textContent = isError
-    ? "Shaded = range of all the models' errors each day (forecast minus observed; zero line = perfect, above = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + "). Dashed = plain average of all five models. Hover a model on the right to light up its line; click to keep it on or turn it off."
+    ? "Shaded = range of all the models' errors each day (forecast minus observed; zero line = perfect, above = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + "). Today = against what has been observed so far, not final. Dashed = plain average of all five models. Hover a model on the right to light up its line; click to keep it on or turn it off."
     : "Shaded = range of all the models' forecasts each day; the last day is tomorrow. Uncolored line = observed, dashed to today so far (day not finished). Dashed = plain average of all five models. Hover a model on the right to light up its line; click to keep it on or turn it off.";
 
   const svg = document.getElementById("chart2");
   svg.replaceChildren();
   const W = 700, H = 380, pad = { l: 46, r: 20, t: 18, b: 34 };
-  // forecast view also gets today: what has been observed so far, against what the models said for today
-  const soFar = !isError && DATA.so_far && DATA.so_far[k] !== null && SYSTEMS.some(s => DATA.systems[s][DATA.today]) ? DATA.so_far[k] : null;
-  const dates = obsDays.map(o => o.date).concat(isError ? [] : (soFar !== null ? [DATA.today] : []).concat([DATA.target]));
+  // both views also get today: what has been observed so far, against what the models said for today (not final until the day ends)
+  const soFar = DATA.so_far && DATA.so_far[k] !== null && SYSTEMS.some(s => DATA.systems[s][DATA.today]) ? DATA.so_far[k] : null;
+  const dates = obsDays.map(o => o.date).concat(soFar !== null ? [DATA.today] : []).concat(isError ? [] : [DATA.target]);
   const value = (s, date) => {
+    if (isError && date === DATA.today) { const f = DATA.systems[s][date]; return f && f[k] !== null ? f[k] - soFar : null; }
     if (isError) return errorOf(s, date, k);
     const f = DATA.systems[s][date];
     return f ? f[k] : null;
@@ -383,10 +384,15 @@ function drawCompare() {
     let d = "", pen = false;
     points.forEach((v, i) => { if (v === null) { pen = false; return; } d += (pen ? "L" : "M") + x(i) + " " + y(v); pen = true; });
     svgEl(parent, "path", { d: d, fill: "none", stroke: color, "stroke-width": width, "stroke-linejoin": "round", "stroke-dasharray": dash || "none" });
-    points.forEach((v, i) => { if (v !== null) svgEl(parent, "circle", { cx: x(i), cy: y(v), r: 4, fill: color, stroke: "var(--surface)", "stroke-width": 2 }); });
+    // today's point is hollow: the day is not finished
+    points.forEach((v, i) => {
+      if (v === null) return;
+      if (dates[i] === DATA.today) svgEl(parent, "circle", { cx: x(i), cy: y(v), r: 4, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
+      else svgEl(parent, "circle", { cx: x(i), cy: y(v), r: 4, fill: color, stroke: "var(--surface)", "stroke-width": 2 });
+    });
   }
   if (!isError) series(svg, dates.map(d => { const o = obsDays.find(q => q.date === d); return o ? o[k] : null; }), "var(--text)", 2);
-  if (soFar !== null) {
+  if (soFar !== null && !isError) {
     const iToday = dates.indexOf(DATA.today), last = obsDays[obsDays.length - 1];
     if (last) svgEl(svg, "line", { x1: x(iToday - 1), y1: y(last[k]), x2: x(iToday), y2: y(soFar), stroke: "var(--text)", "stroke-width": 2, "stroke-dasharray": "5 5" });
     svgEl(svg, "circle", { cx: x(iToday), cy: y(soFar), r: 4, fill: "var(--surface)", stroke: "var(--text)", "stroke-width": 2 });
@@ -411,9 +417,9 @@ function drawCompare() {
       htmlEl(t, "div", "d", date === DATA.today ? "Today  ·  " + fmt(soFar, k) + " " + unit + " so far (through " + DATA.so_far.through + ")"
         : dayLabel(date) + (o ? "  ·  observed " + fmt(o[k], k) + " " + unit : "  ·  forecast day"));
       for (const s of ROWS) {
-        const f = DATA.systems[s][date], e = errorOf(s, date, k);
+        const f = DATA.systems[s][date], e = date === DATA.today && f && f[k] !== null ? f[k] - soFar : errorOf(s, date, k);
         if (!f || f[k] === null) { tipRow(t, SYSTEM_COLOR[s], "–", SYSTEM_LABEL[s]); continue; }
-        if (o) tipRow(t, SYSTEM_COLOR[s], fmt(e, k, true), SYSTEM_LABEL[s] + "  (forecast " + fmt(f[k], k) + ")");
+        if (o || date === DATA.today) tipRow(t, SYSTEM_COLOR[s], fmt(e, k, true), SYSTEM_LABEL[s] + "  (forecast " + fmt(f[k], k) + ")");
         else tipRow(t, SYSTEM_COLOR[s], fmt(f[k], k), SYSTEM_LABEL[s]);
       }
     });
