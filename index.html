@@ -9,7 +9,7 @@
   color-scheme: light;
   --page: #f4f3f0; --surface: #fcfcfb; --line: #e4e2dc; --grid: #ebe9e4;
   --text: #0b0b0b; --text2: #52514e; --muted: #8b8a84;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s8: #e34948;
   --accent: #2a78d6; --accent-wash: #e6f0fc;
 }
 @media (prefers-color-scheme: dark) {
@@ -17,7 +17,7 @@
     color-scheme: dark;
     --page: #111110; --surface: #1a1a19; --line: #2e2e2b; --grid: #262624;
     --text: #f0efec; --text2: #c3c2b7; --muted: #8b8a84;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s8: #e66767;
     --accent: #3987e5; --accent-wash: #16263b;
   }
 }
@@ -71,10 +71,11 @@ svg text.ink { fill: var(--text2); }
 .tip .r b { font-variant-numeric: tabular-nums; min-width: 44px; }
 .tip .r span { color: var(--text2); }
 
-.compare { display: grid; grid-template-columns: 1fr 270px; gap: 16px; align-items: start; }
+.compare { display: grid; grid-template-columns: 1fr 310px; gap: 16px; align-items: start; }
 .panel h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin: 0 0 8px; }
 .panel table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.panel th { font-size: 11px; font-weight: 500; color: var(--muted); text-align: right; padding: 0 0 6px; }
+.panel th { font-size: 11px; font-weight: 500; color: var(--muted); text-align: right; padding: 0 0 6px 10px; white-space: nowrap; }
+.panel td { white-space: nowrap; padding-left: 10px !important; }
 .panel th:first-child { text-align: left; }
 .panel td { padding: 9px 0; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
 .panel td:first-child { text-align: left; }
@@ -130,9 +131,16 @@ const VARS = ["TMAX", "TMIN", "WIND", "PRCP"];
 const VAR_NAME = { TMAX: "High", TMIN: "Low", WIND: "Wind", PRCP: "Precip" };
 const VAR_UNIT = { TMAX: "°F", TMIN: "°F", WIND: "kt", PRCP: "in" };
 const SYSTEMS = ["Ours", "ECMWF", "GFS", "HRRR", "MOS"];
-const SYSTEM_LABEL = { Ours: "bingusV2", ECMWF: "ECMWF", GFS: "GFS", HRRR: "HRRR", MOS: "MOS" };
-const SYSTEM_COLOR = { Ours: "var(--s1)", ECMWF: "var(--s2)", GFS: "var(--s3)", HRRR: "var(--s4)", MOS: "var(--s5)" };
-const state = { variable: "TMAX", init: "Blend", view: "Error", pinned: {} };
+const SYSTEM_LABEL = { Ours: "bingusV2", ECMWF: "ECMWF", GFS: "GFS", HRRR: "HRRR", MOS: "MOS", Average: "All-model avg" };
+const ROWS = SYSTEMS.concat(["Average"]);   // the five models, plus the plain average of whichever of them have a value that day
+DATA.systems.Average = {};
+for (const s of SYSTEMS) for (const date in DATA.systems[s]) DATA.systems.Average[date] = {};
+for (const date in DATA.systems.Average) for (const k of VARS) {
+  const vs = SYSTEMS.map(s => DATA.systems[s][date] ? DATA.systems[s][date][k] : null).filter(v => v !== null && v !== undefined);
+  DATA.systems.Average[date][k] = vs.length ? vs.reduce((a, v) => a + v, 0) / vs.length : null;
+}
+const SYSTEM_COLOR = { Ours: "var(--s1)", ECMWF: "var(--s2)", GFS: "var(--s3)", HRRR: "var(--s4)", MOS: "var(--s5)", Average: "var(--s8)" };
+const state = { variable: "TMAX", init: "Blend", view: "Error", pinned: { Average: true } };
 
 // ---------- small helpers
 const NS = "http://www.w3.org/2000/svg";
@@ -326,8 +334,8 @@ function drawCompare() {
   const obsDays = DATA.obs.filter(o => o[k] !== null && SYSTEMS.some(s => errorOf(s, o.date, k) !== null));
   const isError = state.view === "Error";
   document.getElementById("hint2").textContent = isError
-    ? "Shaded = range of all the models' errors each day (forecast minus observed; zero line = perfect, above = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + "). Hover a model on the right to light up its line; click to keep it on."
-    : "Shaded = range of all the models' forecasts each day; the last day is tomorrow. Uncolored line = observed. Hover a model on the right to light up its line; click to keep it on.";
+    ? "Shaded = range of all the models' errors each day (forecast minus observed; zero line = perfect, above = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + "). Dashed = plain average of all five models. Hover a model on the right to light up its line; click to keep it on or turn it off."
+    : "Shaded = range of all the models' forecasts each day; the last day is tomorrow. Uncolored line = observed. Dashed = plain average of all five models. Hover a model on the right to light up its line; click to keep it on or turn it off.";
 
   const svg = document.getElementById("chart2");
   svg.replaceChildren();
@@ -365,22 +373,22 @@ function drawCompare() {
   if (idx.length > 1) {
     const top = idx.map((i, n) => (n ? "L" : "M") + x(i) + " " + y(highs[i])).join("");
     const bottom = idx.slice().reverse().map(i => "L" + x(i) + " " + y(lows[i])).join("");
-    svgEl(svg, "path", { d: top + bottom + "Z", fill: "var(--text2)", opacity: 0.16 });
+    svgEl(svg, "path", { d: top + bottom + "Z", fill: "var(--s1)", opacity: 0.18 });
   }
   if (isError) svgEl(svg, "line", { x1: pad.l, x2: W - pad.r, y1: y(0), y2: y(0), stroke: "var(--text2)", "stroke-width": 1.5 });
 
-  function series(parent, points, color, width) {
+  function series(parent, points, color, width, dash) {
     let d = "", pen = false;
     points.forEach((v, i) => { if (v === null) { pen = false; return; } d += (pen ? "L" : "M") + x(i) + " " + y(v); pen = true; });
-    svgEl(parent, "path", { d: d, fill: "none", stroke: color, "stroke-width": width, "stroke-linejoin": "round" });
+    svgEl(parent, "path", { d: d, fill: "none", stroke: color, "stroke-width": width, "stroke-linejoin": "round", "stroke-dasharray": dash || "none" });
     points.forEach((v, i) => { if (v !== null) svgEl(parent, "circle", { cx: x(i), cy: y(v), r: 4, fill: color, stroke: "var(--surface)", "stroke-width": 2 }); });
   }
   if (!isError) series(svg, dates.map(d => { const o = obsDays.find(q => q.date === d); return o ? o[k] : null; }), "var(--text)", 2);
   // one hidden line per model; shown while its row on the right is hovered or pinned
   const lineOf = {};
-  for (const s of SYSTEMS) {
+  for (const s of ROWS) {
     lineOf[s] = svgEl(svg, "g", { visibility: state.pinned[s] ? "visible" : "hidden" });
-    series(lineOf[s], dates.map(d => value(s, d)), SYSTEM_COLOR[s], 3);
+    series(lineOf[s], dates.map(d => value(s, d)), SYSTEM_COLOR[s], 3, s === "Average" ? "7 5" : null);
   }
 
   // hover on the chart: one tooltip, every model
@@ -394,7 +402,7 @@ function drawCompare() {
     hair.setAttribute("x1", x(i)); hair.setAttribute("x2", x(i)); hair.setAttribute("visibility", "visible");
     showTip(tip, wrap, svg, x(i), t => {
       htmlEl(t, "div", "d", dayLabel(date) + (o ? "  ·  observed " + fmt(o[k], k) + " " + unit : "  ·  forecast day"));
-      for (const s of SYSTEMS) {
+      for (const s of ROWS) {
         const f = DATA.systems[s][date], e = errorOf(s, date, k);
         if (!f || f[k] === null) { tipRow(t, SYSTEM_COLOR[s], "–", SYSTEM_LABEL[s]); continue; }
         if (o) tipRow(t, SYSTEM_COLOR[s], fmt(e, k, true), SYSTEM_LABEL[s] + "  (forecast " + fmt(f[k], k) + ")");
@@ -410,7 +418,7 @@ function drawCompare() {
   table.replaceChildren();
   const head = htmlEl(table, "tr");
   for (const h of ["", "Avg miss", "Bias", "Tomorrow"]) htmlEl(head, "th", "", h);
-  const stats = SYSTEMS.map(s => {
+  const stats = ROWS.map(s => {
     const errs = obsDays.map(o => errorOf(s, o.date, k)).filter(e => e !== null);
     return { s: s, errs: errs, mae: errs.length ? errs.reduce((a, e) => a + Math.abs(e), 0) / errs.length : null };
   }).sort((a, b) => (a.mae === null ? 1e9 : a.mae) - (b.mae === null ? 1e9 : b.mae));
@@ -439,10 +447,10 @@ function drawCompare() {
     const hide = () => { if (!state.pinned[s]) lineOf[s].setAttribute("visibility", "hidden"); };
     tr.onpointerenter = show; tr.onfocus = show;
     tr.onpointerleave = hide; tr.onblur = hide;
-    tr.onclick = () => { state.pinned[s] = !state.pinned[s]; tr.className = state.pinned[s] ? "pin" : ""; if (state.pinned[s]) show(); };
+    tr.onclick = () => { state.pinned[s] = !state.pinned[s]; tr.className = state.pinned[s] ? "pin" : ""; lineOf[s].setAttribute("visibility", state.pinned[s] ? "visible" : "hidden"); };
   }
   document.getElementById("panelnote").textContent = "Avg miss = average size of the daily error. Bias = average with sign (+ = too high)." +
-    (k === "WIND" ? " Raw model wind is 10 m sustained, not the contest 2-min max, so raw models run low." : k === "PRCP" ? " MOS has no precip amount." : "");
+    (k === "PRCP" ? " The all-model average uses the four models that give an amount." : "") + (k === "WIND" ? " Raw model wind is 10 m sustained, not the contest 2-min max, so raw models run low." : k === "PRCP" ? " MOS has no precip amount." : "");
 }
 
 function drawAll() { drawHeader(); drawConfidence(); drawCompare(); }
@@ -451,7 +459,7 @@ for (const part of decodeURIComponent(location.hash.slice(1)).split(",")) {
   if (VARS.includes(part)) state.variable = part;
   if (part === "Blend" || DATA.inits.includes(part)) state.init = part;
   if (part === "Error" || part === "Forecast") state.view = part;
-  if (SYSTEMS.includes(part)) state.pinned[part] = true;
+  if (ROWS.includes(part)) state.pinned[part] = true;
 }
 drawAll();
 </script>
