@@ -28,16 +28,21 @@ h1 { font-size: 34px; line-height: 1.15; margin: 0 0 6px; font-weight: 650; lett
 h1 span { color: var(--text2); font-weight: 400; }
 .meta { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
 h2 { font-size: 20px; margin: 0 0 2px; font-weight: 650; }
-.hint { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 section { margin-top: 44px; }
 
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 12px; text-align: left;
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; position: sticky; top: 0; z-index: 5; background: var(--page); padding: 10px 0; }
+.pick { color: var(--muted); font-size: 12px; margin: 0 0 -4px; }
+.insight { font-size: 16px; color: var(--text); margin: 6px 0 14px; max-width: 760px; }
+.ctl { color: var(--muted); font-size: 13px; }
+.key { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text2); }
+.key i { width: 14px; height: 3px; border-radius: 2px; background: var(--text); display: inline-block; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px 8px; text-align: left;
         cursor: pointer; font: inherit; color: inherit; }
 .tile:hover { border-color: var(--muted); }
 .tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-wash); }
 .tile .lab { font-size: 13px; color: var(--text2); }
-.tile .val { font-size: 40px; font-weight: 650; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.tile .val { font-size: 34px; font-weight: 650; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .tile .val small { font-size: 16px; font-weight: 400; color: var(--text2); margin-left: 3px; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
@@ -90,25 +95,27 @@ svg text.ink { fill: var(--text2); }
 <main>
   <h1 id="title"></h1>
   <p class="meta" id="meta"></p>
+  <p class="pick">Pick a variable. Everything below follows it.</p>
   <div class="tiles" id="tiles"></div>
 
   <section>
-    <h2>Confidence</h2>
-    <p class="hint" id="hint1"></p>
+    <h2>How sure are we?</h2>
+    <p class="insight" id="insight1"></p>
     <div class="card">
-      <div class="controls"><div class="seg" id="initseg"></div></div>
+      <div class="controls"><span class="ctl">Model run</span><div class="seg" id="initseg"></div></div>
       <div class="chartwrap"><svg id="chart1" viewBox="0 0 980 380"></svg><div class="tip" id="tip1"></div></div>
+      <p class="hint" id="hint1" style="margin:8px 0 0"></p>
     </div>
   </section>
 
   <section>
-    <h2>Model comparison</h2>
-    <p class="hint" id="hint2"></p>
+    <h2>How have we done against the other models?</h2>
+    <p class="insight" id="insight2"></p>
     <div class="controls">
-      <div class="seg" id="varseg"></div>
-      <div class="seg" id="viewseg"></div>
-      <div class="chips" id="chips"></div>
+      <span class="ctl">Show</span><div class="seg" id="viewseg"></div>
+      <span class="ctl">Models</span><div class="chips" id="chips"></div>
     </div>
+    <p class="hint" id="hint2"></p>
     <div class="compare">
       <div class="card"><div class="chartwrap"><svg id="chart2" viewBox="0 0 700 380"></svg><div class="tip" id="tip2"></div></div></div>
       <div class="card panel"><h3 id="panelhead"></h3><table id="paneltable"></table><p class="note" id="panelnote"></p></div>
@@ -117,7 +124,7 @@ svg text.ink { fill: var(--text2); }
 </main>
 
 <script>
-const DATA = {"city": "Yakutat", "code": "PAYA", "target": "2026-11-12", "today": "2026-11-11", "generated": "Nov 11, 3:42 PM MT", "inits": ["00Z", "06Z", "12Z", "18Z"], "init_date": "Nov 11", "submitted": {"TMAX": "45", "TMIN": "36", "WIND": "14", "PRCP": "0.67"}, "ours": {"TMAX": {"00Z": {"forecast": 44.8, "members": [44.8, 45.4, 45.5, 45.3, 45.4, 45.1, 44.6, 43.9, 44.1, 44.2, 43.9, 44.0, 44.8, 45.4, 45.3, 45.6, 44.7, 44.1, 44.1, 43.8, 45.6]}, "06Z": {"forecast": 45.1, "members": [45.4, 45.6, 46.3, 45.5, 46.1, 45.2, 45.2, 44.4, 45.2, 44.4, 44.2, 44.8, 45.4, 45.6, 45.9, 45.8, 45.1, 44.7, 45.1, 44.7, 45.2]}, "12Z": {"forecast": 44.4, "members": [44.0, 44.5, 44.9, 44.1, 44.9, 44.5, 44.4, 43.5, 44.7, 44.4, 43.7, 44.0, 44.1, 44.3, 44.9, 44.4, 44.4, 43.7, 44.3, 44.1, 45.0]}, "18Z": {"forecast": 45.3, "members": [44.9, 45.2, 45.9, 45.0, 45.7, 45.0, 45.2, 44.0, 45.4, 44.9, 44.5, 44.7, 44.9, 45.2, 45.8, 45.3, 45.1, 44.3, 45.3, 45.0, 46.3]}, "Blend": {"forecast": 44.7, "members": [44.8, 45.2, 45.6, 45.0, 45.5, 44.9, 44.8, 45.1, 45.5, 45.3, 44.9, 44.0, 44.9, 44.5, 44.1, 44.4, 44.8, 44.2, 44.7, 44.4, 45.5]}}, "TMIN": {"00Z": {"forecast": 35.5, "members": [36.6, 36.4, 36.9, 36.3, 37.0, 37.1, 36.2, 34.9, 35.9, 35.1, 34.8, 35.4, 36.2, 36.6, 36.1, 37.1, 34.9, 35.3, 35.2, 35.2, 35.4]}, "06Z": {"forecast": 35.7, "members": [37.4, 36.5, 37.5, 36.2, 37.1, 37.4, 35.7, 35.7, 36.1, 35.8, 34.8, 36.4, 36.5, 36.5, 36.6, 37.1, 35.4, 34.8, 35.2, 36.2, 35.1]}, "12Z": {"forecast": 36.0, "members": [36.5, 35.9, 36.1, 35.9, 36.5, 36.4, 36.3, 35.9, 36.2, 36.3, 35.8, 36.5, 35.9, 35.9, 36.2, 36.6, 36.1, 35.5, 36.0, 36.5, 35.3]}, "18Z": {"forecast": 35.9, "members": [37.1, 36.3, 37.2, 36.5, 37.2, 36.8, 36.4, 35.0, 36.2, 35.7, 35.5, 36.5, 36.5, 36.3, 36.9, 37.1, 36.3, 35.4, 35.9, 35.9, 34.9]}, "Blend": {"forecast": 35.9, "members": [36.9, 36.3, 36.9, 36.2, 37.0, 36.9, 36.3, 36.3, 36.4, 37.0, 36.1, 35.4, 36.1, 35.7, 35.2, 36.2, 35.7, 35.2, 35.5, 36.0, 35.2]}}, "WIND": {"00Z": {"forecast": 14.4, "members": [13.8, 12.8, 13.2, 13.9, 13.9, 14.4, 15.1, 14.6, 15.2, 14.7, 14.5, 13.9, 13.9, 13.6, 13.3, 14.6, 14.4, 14.1, 14.8, 15.4, 15.2]}, "06Z": {"forecast": 14.0, "members": [13.0, 12.4, 12.6, 13.8, 13.1, 13.7, 14.0, 14.8, 13.9, 14.0, 12.9, 14.3, 13.0, 12.9, 13.2, 14.1, 13.6, 13.6, 13.2, 14.1, 15.3]}, "12Z": {"forecast": 14.1, "members": [13.8, 13.5, 13.3, 14.0, 14.3, 14.3, 14.5, 15.0, 14.3, 14.9, 13.9, 14.1, 13.5, 14.0, 13.8, 14.2, 14.4, 14.1, 14.1, 14.9, 14.3]}, "18Z": {"forecast": 14.2, "members": [13.8, 13.7, 13.6, 14.3, 13.9, 14.3, 14.3, 14.1, 14.6, 15.0, 13.0, 14.5, 13.7, 14.2, 14.4, 14.4, 14.2, 13.8, 14.2, 15.0, 14.6]}, "Blend": {"forecast": 14.2, "members": [13.6, 13.1, 13.2, 14.0, 13.8, 14.2, 13.6, 13.7, 13.7, 14.3, 14.5, 14.6, 14.5, 14.7, 13.6, 14.2, 14.1, 13.9, 14.1, 14.9, 14.8]}}, "PRCP": {"00Z": {"forecast": 0.59, "members": [0.62, 0.6, 0.52, 0.55, 0.65, 0.67, 0.69, 0.56, 0.61, 0.46, 0.55, 0.54, 0.67, 0.68, 0.55, 0.57, 0.58, 0.49, 0.63, 0.6, 0.58]}, "06Z": {"forecast": 0.47, "members": [0.48, 0.48, 0.4, 0.45, 0.49, 0.53, 0.54, 0.45, 0.46, 0.39, 0.44, 0.5, 0.47, 0.52, 0.44, 0.47, 0.52, 0.43, 0.49, 0.47, 0.49]}, "12Z": {"forecast": 0.71, "members": [0.76, 0.78, 0.66, 0.72, 0.67, 0.76, 0.77, 0.72, 0.66, 0.57, 0.59, 0.7, 0.7, 0.82, 0.69, 0.76, 0.64, 0.67, 0.7, 0.67, 0.59]}, "18Z": {"forecast": 0.66, "members": [0.71, 0.73, 0.61, 0.71, 0.61, 0.71, 0.72, 0.67, 0.61, 0.48, 0.43, 0.67, 0.7, 0.77, 0.67, 0.75, 0.67, 0.6, 0.65, 0.58, 0.56]}, "Blend": {"forecast": 0.67, "members": [0.64, 0.65, 0.55, 0.61, 0.6, 0.67, 0.64, 0.7, 0.59, 0.64, 0.68, 0.6, 0.58, 0.47, 0.5, 0.6, 0.6, 0.55, 0.62, 0.58, 0.55]}}}, "obs": [{"date": "2026-11-04", "TMAX": 47.0, "TMIN": 41.0, "WIND": 14.0, "PRCP": 0.51}, {"date": "2026-11-05", "TMAX": 46.0, "TMIN": 40.0, "WIND": 14.0, "PRCP": 0.75}, {"date": "2026-11-06", "TMAX": 46.0, "TMIN": 40.0, "WIND": 24.0, "PRCP": 1.17}, {"date": "2026-11-07", "TMAX": 45.0, "TMIN": 36.0, "WIND": 15.0, "PRCP": 0.36}, {"date": "2026-11-08", "TMAX": 43.0, "TMIN": 32.0, "WIND": 9.0, "PRCP": 0.0}, {"date": "2026-11-09", "TMAX": 48.0, "TMIN": 32.0, "WIND": 31.0, "PRCP": 0.45}, {"date": "2026-11-10", "TMAX": 50.0, "TMIN": 36.0, "WIND": 19.0, "PRCP": 0.89}], "so_far": {"TMAX": 47.0, "TMIN": 40.0, "WIND": 21.0, "PRCP": 0.23, "through": "22:11Z"}, "systems": {"Ours": {"2026-11-04": {"TMAX": 47.9, "TMIN": 38.7, "WIND": 15.1, "PRCP": 0.86}, "2026-11-05": {"TMAX": 47.7, "TMIN": 39.9, "WIND": 16.8, "PRCP": 0.58}, "2026-11-06": {"TMAX": 48.0, "TMIN": 41.1, "WIND": 22.9, "PRCP": 0.98}, "2026-11-07": {"TMAX": 46.8, "TMIN": 35.3, "WIND": 17.6, "PRCP": 0.58}, "2026-11-08": {"TMAX": 42.6, "TMIN": 30.9, "WIND": 12.0, "PRCP": 0.01}, "2026-11-09": {"TMAX": 48.1, "TMIN": 35.2, "WIND": 29.9, "PRCP": 0.43}, "2026-11-10": {"TMAX": 47.7, "TMIN": 39.0, "WIND": 24.3, "PRCP": 0.47}, "2026-11-12": {"TMAX": 44.7, "TMIN": 35.9, "WIND": 14.2, "PRCP": 0.67}}, "ECMWF": {"2026-11-04": {"TMAX": 48.7, "TMIN": 43.4, "WIND": 13.7, "PRCP": 0.8}, "2026-11-05": {"TMAX": 45.4, "TMIN": 41.3, "WIND": 11.8, "PRCP": 0.61}, "2026-11-06": {"TMAX": 46.5, "TMIN": 42.2, "WIND": 20.6, "PRCP": 1.0}, "2026-11-07": {"TMAX": 44.6, "TMIN": 38.8, "WIND": 16.7, "PRCP": 0.7}, "2026-11-08": {"TMAX": 42.4, "TMIN": 38.1, "WIND": 12.7, "PRCP": 0.06}, "2026-11-09": {"TMAX": 47.6, "TMIN": 38.8, "WIND": 35.6, "PRCP": 0.42}, "2026-11-10": {"TMAX": 47.9, "TMIN": 39.8, "WIND": 32.9, "PRCP": 0.6}, "2026-11-12": {"TMAX": 43.8, "TMIN": 37.2, "WIND": 13.5, "PRCP": 0.84}}, "GFS": {"2026-11-04": {"TMAX": 46.6, "TMIN": 40.0, "WIND": 17.5, "PRCP": 0.73}, "2026-11-05": {"TMAX": 47.4, "TMIN": 40.0, "WIND": 20.2, "PRCP": 0.3}, "2026-11-06": {"TMAX": 46.6, "TMIN": 40.1, "WIND": 33.0, "PRCP": 1.02}, "2026-11-07": {"TMAX": 46.1, "TMIN": 40.0, "WIND": 23.4, "PRCP": 0.95}, "2026-11-08": {"TMAX": 43.3, "TMIN": 38.4, "WIND": 16.0, "PRCP": 0.02}, "2026-11-09": {"TMAX": 48.3, "TMIN": 38.8, "WIND": 27.6, "PRCP": 0.12}, "2026-11-10": {"TMAX": 47.9, "TMIN": 41.1, "WIND": 33.2, "PRCP": 0.38}, "2026-11-12": {"TMAX": 46.2, "TMIN": 39.4, "WIND": 18.9, "PRCP": 0.57}}, "HRRR": {"2026-11-04": {"TMAX": 44.7, "TMIN": 38.4, "WIND": 14.6, "PRCP": 0.85}, "2026-11-05": {"TMAX": 43.1, "TMIN": 38.4, "WIND": 13.3, "PRCP": 0.45}, "2026-11-06": {"TMAX": 44.1, "TMIN": 39.4, "WIND": 15.9, "PRCP": 0.35}, "2026-11-07": {"TMAX": 42.8, "TMIN": 34.4, "WIND": 16.1, "PRCP": 0.66}, "2026-11-08": {"TMAX": 41.6, "TMIN": 33.7, "WIND": 8.7, "PRCP": 0.04}, "2026-11-09": {"TMAX": 44.1, "TMIN": 34.4, "WIND": 27.7, "PRCP": 0.42}, "2026-11-10": {"TMAX": 43.9, "TMIN": 39.0, "WIND": 21.9, "PRCP": 0.27}, "2026-11-12": {"TMAX": 40.7, "TMIN": 34.6, "WIND": 12.8, "PRCP": 0.57}}, "MOS": {"2026-11-04": {"TMAX": 46.2, "TMIN": 40.5, "WIND": 12.8, "PRCP": null}, "2026-11-05": {"TMAX": 46.8, "TMIN": 38.2, "WIND": 11.0, "PRCP": null}, "2026-11-06": {"TMAX": 47.5, "TMIN": 39.2, "WIND": 18.2, "PRCP": null}, "2026-11-07": {"TMAX": 45.0, "TMIN": 39.2, "WIND": 12.2, "PRCP": null}, "2026-11-08": {"TMAX": 42.5, "TMIN": 31.2, "WIND": 5.0, "PRCP": null}, "2026-11-09": {"TMAX": 46.0, "TMIN": 32.8, "WIND": 20.8, "PRCP": null}, "2026-11-10": {"TMAX": 46.2, "TMIN": 38.2, "WIND": 19.2, "PRCP": null}, "2026-11-12": {"TMAX": 42.8, "TMIN": 38.2, "WIND": 10.8, "PRCP": null}}}};
+const DATA = {"city": "Yakutat", "code": "PAYA", "target": "2026-11-12", "today": "2026-11-11", "generated": "Nov 11, 3:42 PM MT", "inits": ["00Z", "06Z", "12Z", "18Z"], "init_date": "Nov 11", "submitted": {"TMAX": "45", "TMIN": "36", "WIND": "14", "PRCP": "0.67"}, "ours": {"TMAX": {"00Z": {"forecast": 44.8, "members": [44.8, 45.4, 45.5, 45.3, 45.4, 45.1, 44.6, 43.9, 44.1, 44.2, 43.9, 44.0, 44.8, 45.4, 45.3, 45.6, 44.7, 44.1, 44.1, 43.8, 45.6]}, "06Z": {"forecast": 45.1, "members": [45.4, 45.6, 46.3, 45.5, 46.1, 45.2, 45.2, 44.4, 45.2, 44.4, 44.2, 44.8, 45.4, 45.6, 45.9, 45.8, 45.1, 44.7, 45.1, 44.7, 45.2]}, "12Z": {"forecast": 44.4, "members": [44.0, 44.5, 44.9, 44.1, 44.9, 44.5, 44.4, 43.5, 44.7, 44.4, 43.7, 44.0, 44.1, 44.3, 44.9, 44.4, 44.4, 43.7, 44.3, 44.1, 45.0]}, "18Z": {"forecast": 45.3, "members": [44.9, 45.2, 45.9, 45.0, 45.7, 45.0, 45.2, 44.0, 45.4, 44.9, 44.5, 44.7, 44.9, 45.2, 45.8, 45.3, 45.1, 44.3, 45.3, 45.0, 46.3]}, "Blend": {"forecast": 44.7, "members": [44.8, 45.4, 44.0, 44.9, 45.4, 45.6, 44.5, 45.2, 45.5, 46.3, 44.9, 45.9, 45.3, 45.5, 44.1, 45.0, 45.4, 46.1, 44.9, 45.7, 45.1, 45.2, 44.5, 45.0, 44.6, 45.2, 44.4, 45.2, 43.9, 44.4, 43.5, 44.0, 44.1, 45.2, 44.7, 45.4, 44.2, 44.4, 44.4, 44.9, 43.9, 44.2, 43.7, 44.5, 44.0, 44.8, 44.0, 44.7, 44.8, 45.4, 44.1, 44.9, 45.4, 45.6, 44.3, 45.2, 45.3, 45.9, 44.9, 45.8, 45.6, 45.8, 44.4, 45.3, 44.7, 45.1, 44.4, 45.1, 44.1, 44.7, 43.7, 44.3, 44.1, 45.1, 44.3, 45.3, 43.8, 44.7, 44.1, 45.0, 45.6, 45.2, 45.0, 46.3]}}, "TMIN": {"00Z": {"forecast": 35.5, "members": [36.6, 36.4, 36.9, 36.3, 37.0, 37.1, 36.2, 34.9, 35.9, 35.1, 34.8, 35.4, 36.2, 36.6, 36.1, 37.1, 34.9, 35.3, 35.2, 35.2, 35.4]}, "06Z": {"forecast": 35.7, "members": [37.4, 36.5, 37.5, 36.2, 37.1, 37.4, 35.7, 35.7, 36.1, 35.8, 34.8, 36.4, 36.5, 36.5, 36.6, 37.1, 35.4, 34.8, 35.2, 36.2, 35.1]}, "12Z": {"forecast": 36.0, "members": [36.5, 35.9, 36.1, 35.9, 36.5, 36.4, 36.3, 35.9, 36.2, 36.3, 35.8, 36.5, 35.9, 35.9, 36.2, 36.6, 36.1, 35.5, 36.0, 36.5, 35.3]}, "18Z": {"forecast": 35.9, "members": [37.1, 36.3, 37.2, 36.5, 37.2, 36.8, 36.4, 35.0, 36.2, 35.7, 35.5, 36.5, 36.5, 36.3, 36.9, 37.1, 36.3, 35.4, 35.9, 35.9, 34.9]}, "Blend": {"forecast": 35.9, "members": [36.6, 37.4, 36.5, 37.1, 36.4, 36.5, 35.9, 36.3, 36.9, 37.5, 36.1, 37.2, 36.3, 36.2, 35.9, 36.5, 37.0, 37.1, 36.5, 37.2, 37.1, 37.4, 36.4, 36.8, 36.2, 35.7, 36.3, 36.4, 34.9, 35.7, 35.9, 35.0, 35.9, 36.1, 36.2, 36.2, 35.1, 35.8, 36.3, 35.7, 34.8, 34.8, 35.8, 35.5, 35.4, 36.4, 36.5, 36.5, 36.2, 36.5, 35.9, 36.5, 36.6, 36.5, 35.9, 36.3, 36.1, 36.6, 36.2, 36.9, 37.1, 37.1, 36.6, 37.1, 34.9, 35.4, 36.1, 36.3, 35.3, 34.8, 35.5, 35.4, 35.2, 35.2, 36.0, 35.9, 35.2, 36.2, 36.5, 35.9, 35.4, 35.1, 35.3, 34.9]}}, "WIND": {"00Z": {"forecast": 14.4, "members": [13.8, 12.8, 13.2, 13.9, 13.9, 14.4, 15.1, 14.6, 15.2, 14.7, 14.5, 13.9, 13.9, 13.6, 13.3, 14.6, 14.4, 14.1, 14.8, 15.4, 15.2]}, "06Z": {"forecast": 14.0, "members": [13.0, 12.4, 12.6, 13.8, 13.1, 13.7, 14.0, 14.8, 13.9, 14.0, 12.9, 14.3, 13.0, 12.9, 13.2, 14.1, 13.6, 13.6, 13.2, 14.1, 15.3]}, "12Z": {"forecast": 14.1, "members": [13.8, 13.5, 13.3, 14.0, 14.3, 14.3, 14.5, 15.0, 14.3, 14.9, 13.9, 14.1, 13.5, 14.0, 13.8, 14.2, 14.4, 14.1, 14.1, 14.9, 14.3]}, "18Z": {"forecast": 14.2, "members": [13.8, 13.7, 13.6, 14.3, 13.9, 14.3, 14.3, 14.1, 14.6, 15.0, 13.0, 14.5, 13.7, 14.2, 14.4, 14.4, 14.2, 13.8, 14.2, 15.0, 14.6]}, "Blend": {"forecast": 14.2, "members": [13.8, 13.0, 13.8, 13.8, 12.8, 12.4, 13.5, 13.7, 13.2, 12.6, 13.3, 13.6, 13.9, 13.8, 14.0, 14.3, 13.9, 13.1, 14.3, 13.9, 14.4, 13.7, 14.3, 14.3, 15.1, 14.0, 14.5, 14.3, 14.6, 14.8, 15.0, 14.1, 15.2, 13.9, 14.3, 14.6, 14.7, 14.0, 14.9, 15.0, 14.5, 12.9, 13.9, 13.0, 13.9, 14.3, 14.1, 14.5, 13.9, 13.0, 13.5, 13.7, 13.6, 12.9, 14.0, 14.2, 13.3, 13.2, 13.8, 14.4, 14.6, 14.1, 14.2, 14.4, 14.4, 13.6, 14.4, 14.2, 14.1, 13.6, 14.1, 13.8, 14.8, 13.2, 14.1, 14.2, 15.4, 14.1, 14.9, 15.0, 15.2, 15.3, 14.3, 14.6]}}, "PRCP": {"00Z": {"forecast": 0.59, "members": [0.62, 0.6, 0.52, 0.55, 0.65, 0.67, 0.69, 0.56, 0.61, 0.46, 0.55, 0.54, 0.67, 0.68, 0.55, 0.57, 0.58, 0.49, 0.63, 0.6, 0.58]}, "06Z": {"forecast": 0.47, "members": [0.48, 0.48, 0.4, 0.45, 0.49, 0.53, 0.54, 0.45, 0.46, 0.39, 0.44, 0.5, 0.47, 0.52, 0.44, 0.47, 0.52, 0.43, 0.49, 0.47, 0.49]}, "12Z": {"forecast": 0.71, "members": [0.76, 0.78, 0.66, 0.72, 0.67, 0.76, 0.77, 0.72, 0.66, 0.57, 0.59, 0.7, 0.7, 0.82, 0.69, 0.76, 0.64, 0.67, 0.7, 0.67, 0.59]}, "18Z": {"forecast": 0.66, "members": [0.71, 0.73, 0.61, 0.71, 0.61, 0.71, 0.72, 0.67, 0.61, 0.48, 0.43, 0.67, 0.7, 0.77, 0.67, 0.75, 0.67, 0.6, 0.65, 0.58, 0.56]}, "Blend": {"forecast": 0.67, "members": [0.62, 0.48, 0.76, 0.71, 0.6, 0.48, 0.78, 0.73, 0.52, 0.4, 0.66, 0.61, 0.55, 0.45, 0.72, 0.71, 0.65, 0.49, 0.67, 0.61, 0.67, 0.53, 0.76, 0.71, 0.69, 0.54, 0.77, 0.72, 0.56, 0.45, 0.72, 0.67, 0.61, 0.46, 0.66, 0.61, 0.46, 0.39, 0.57, 0.48, 0.55, 0.44, 0.59, 0.43, 0.54, 0.5, 0.7, 0.67, 0.67, 0.47, 0.7, 0.7, 0.68, 0.52, 0.82, 0.77, 0.55, 0.44, 0.69, 0.67, 0.57, 0.47, 0.76, 0.75, 0.58, 0.52, 0.64, 0.67, 0.49, 0.43, 0.67, 0.6, 0.63, 0.49, 0.7, 0.65, 0.6, 0.47, 0.67, 0.58, 0.58, 0.49, 0.59, 0.56]}}}, "obs": [{"date": "2026-11-04", "TMAX": 47.0, "TMIN": 41.0, "WIND": 14.0, "PRCP": 0.51}, {"date": "2026-11-05", "TMAX": 46.0, "TMIN": 40.0, "WIND": 14.0, "PRCP": 0.75}, {"date": "2026-11-06", "TMAX": 46.0, "TMIN": 40.0, "WIND": 24.0, "PRCP": 1.17}, {"date": "2026-11-07", "TMAX": 45.0, "TMIN": 36.0, "WIND": 15.0, "PRCP": 0.36}, {"date": "2026-11-08", "TMAX": 43.0, "TMIN": 32.0, "WIND": 9.0, "PRCP": 0.0}, {"date": "2026-11-09", "TMAX": 48.0, "TMIN": 32.0, "WIND": 31.0, "PRCP": 0.45}, {"date": "2026-11-10", "TMAX": 50.0, "TMIN": 36.0, "WIND": 19.0, "PRCP": 0.89}], "so_far": {"TMAX": 47.0, "TMIN": 40.0, "WIND": 21.0, "PRCP": 0.23, "through": "22:11Z"}, "systems": {"Ours": {"2026-11-04": {"TMAX": 47.9, "TMIN": 38.7, "WIND": 15.1, "PRCP": 0.86}, "2026-11-05": {"TMAX": 47.7, "TMIN": 39.9, "WIND": 16.8, "PRCP": 0.58}, "2026-11-06": {"TMAX": 48.0, "TMIN": 41.1, "WIND": 22.9, "PRCP": 0.98}, "2026-11-07": {"TMAX": 46.8, "TMIN": 35.3, "WIND": 17.6, "PRCP": 0.58}, "2026-11-08": {"TMAX": 42.6, "TMIN": 30.9, "WIND": 12.0, "PRCP": 0.01}, "2026-11-09": {"TMAX": 48.1, "TMIN": 35.2, "WIND": 29.9, "PRCP": 0.43}, "2026-11-10": {"TMAX": 47.7, "TMIN": 39.0, "WIND": 24.3, "PRCP": 0.47}, "2026-11-12": {"TMAX": 44.7, "TMIN": 35.9, "WIND": 14.2, "PRCP": 0.67}}, "ECMWF": {"2026-11-04": {"TMAX": 48.7, "TMIN": 43.4, "WIND": 13.7, "PRCP": 0.8}, "2026-11-05": {"TMAX": 45.4, "TMIN": 41.3, "WIND": 11.8, "PRCP": 0.61}, "2026-11-06": {"TMAX": 46.5, "TMIN": 42.2, "WIND": 20.6, "PRCP": 1.0}, "2026-11-07": {"TMAX": 44.6, "TMIN": 38.8, "WIND": 16.7, "PRCP": 0.7}, "2026-11-08": {"TMAX": 42.4, "TMIN": 38.1, "WIND": 12.7, "PRCP": 0.06}, "2026-11-09": {"TMAX": 47.6, "TMIN": 38.8, "WIND": 35.6, "PRCP": 0.42}, "2026-11-10": {"TMAX": 47.9, "TMIN": 39.8, "WIND": 32.9, "PRCP": 0.6}, "2026-11-12": {"TMAX": 43.8, "TMIN": 37.2, "WIND": 13.5, "PRCP": 0.84}}, "GFS": {"2026-11-04": {"TMAX": 46.6, "TMIN": 40.0, "WIND": 17.5, "PRCP": 0.73}, "2026-11-05": {"TMAX": 47.4, "TMIN": 40.0, "WIND": 20.2, "PRCP": 0.3}, "2026-11-06": {"TMAX": 46.6, "TMIN": 40.1, "WIND": 33.0, "PRCP": 1.02}, "2026-11-07": {"TMAX": 46.1, "TMIN": 40.0, "WIND": 23.4, "PRCP": 0.95}, "2026-11-08": {"TMAX": 43.3, "TMIN": 38.4, "WIND": 16.0, "PRCP": 0.02}, "2026-11-09": {"TMAX": 48.3, "TMIN": 38.8, "WIND": 27.6, "PRCP": 0.12}, "2026-11-10": {"TMAX": 47.9, "TMIN": 41.1, "WIND": 33.2, "PRCP": 0.38}, "2026-11-12": {"TMAX": 46.2, "TMIN": 39.4, "WIND": 18.9, "PRCP": 0.57}}, "HRRR": {"2026-11-04": {"TMAX": 44.7, "TMIN": 38.4, "WIND": 14.6, "PRCP": 0.85}, "2026-11-05": {"TMAX": 43.1, "TMIN": 38.4, "WIND": 13.3, "PRCP": 0.45}, "2026-11-06": {"TMAX": 44.1, "TMIN": 39.4, "WIND": 15.9, "PRCP": 0.35}, "2026-11-07": {"TMAX": 42.8, "TMIN": 34.4, "WIND": 16.1, "PRCP": 0.66}, "2026-11-08": {"TMAX": 41.6, "TMIN": 33.7, "WIND": 8.7, "PRCP": 0.04}, "2026-11-09": {"TMAX": 44.1, "TMIN": 34.4, "WIND": 27.7, "PRCP": 0.42}, "2026-11-10": {"TMAX": 43.9, "TMIN": 39.0, "WIND": 21.9, "PRCP": 0.27}, "2026-11-12": {"TMAX": 40.7, "TMIN": 34.6, "WIND": 12.8, "PRCP": 0.57}}, "MOS": {"2026-11-04": {"TMAX": 46.2, "TMIN": 40.5, "WIND": 12.8, "PRCP": null}, "2026-11-05": {"TMAX": 46.8, "TMIN": 38.2, "WIND": 11.0, "PRCP": null}, "2026-11-06": {"TMAX": 47.5, "TMIN": 39.2, "WIND": 18.2, "PRCP": null}, "2026-11-07": {"TMAX": 45.0, "TMIN": 39.2, "WIND": 12.2, "PRCP": null}, "2026-11-08": {"TMAX": 42.5, "TMIN": 31.2, "WIND": 5.0, "PRCP": null}, "2026-11-09": {"TMAX": 46.0, "TMIN": 32.8, "WIND": 20.8, "PRCP": null}, "2026-11-10": {"TMAX": 46.2, "TMIN": 38.2, "WIND": 19.2, "PRCP": null}, "2026-11-12": {"TMAX": 42.8, "TMIN": 38.2, "WIND": 10.8, "PRCP": null}}}};
 
 const VARS = ["TMAX", "TMIN", "WIND", "PRCP"];
 const VAR_NAME = { TMAX: "High", TMIN: "Low", WIND: "Wind", PRCP: "Precip" };
@@ -217,10 +224,17 @@ function drawHeader() {
 // ---------- section 1: spread inside our model
 function drawConfidence() {
   const k = state.variable, unit = VAR_UNIT[k];
-  segmented("initseg", [{ label: "Blend", value: "Blend" }].concat(DATA.inits.map(i => ({ label: i, value: i }))), "init", drawAll);
+  segmented("initseg", [{ label: "All runs", value: "Blend" }].concat(DATA.inits.map(i => ({ label: i, value: i }))), "init", drawAll);
   const view = DATA.ours[k][state.init];
-  document.getElementById("hint1").textContent = VAR_NAME[k] + ": observed, then every one of our " + view.members.length +
-    " models fanned out to the forecast day (the XGB plus every NN seed).";
+  const sorted = view.members.filter(m => m !== null).sort((a, b) => a - b);
+  const pct = q => { const i = q * (sorted.length - 1), a = Math.floor(i); return sorted[a] + (sorted[Math.min(a + 1, sorted.length - 1)] - sorted[a]) * (i - a); };
+  const mLo = sorted[0], mHi = sorted[sorted.length - 1], m25 = pct(0.25), m75 = pct(0.75);
+  const runText = state.init === "Blend" ? "Across all " + DATA.inits.length + " runs, our" : "In the " + state.init + " run, our";
+  document.getElementById("insight1").textContent = runText + " " + sorted.length + " model forecasts put the " + VAR_NAME[k].toLowerCase() +
+    " between " + fmt(mLo, k) + " and " + fmt(mHi, k) + " " + unit + ". Half of them fall within " + fmt(m25, k) + "–" + fmt(m75, k) + ".";
+  document.getElementById("hint1").textContent = "Uncolored line = observed. Each thin blue line = one of our models (the XGB plus every NN seed" +
+    (state.init === "Blend" ? ", from every run" : "") + "). Light shading = full range, darker = middle half. Thick line = what we submitted" +
+    (state.init === "Blend" ? "." : " would be from this run alone.");
 
   const svg = document.getElementById("chart1");
   svg.replaceChildren();
@@ -250,8 +264,12 @@ function drawConfidence() {
 
   const iT = cols.length - 1, iA = iT - 1, xA = x(iA), yA = y(cols[iA].value), xT = x(iT), mid = (xT - xA) * 0.55;
   const curve = v => "C" + (xA + mid) + " " + yA + "," + (xT - mid) + " " + y(v) + "," + xT + " " + y(v);
+  // shading: full range of our models, then the middle half
+  const back = v => "C" + (xT - mid) + " " + y(v) + "," + (xA + mid) + " " + yA + "," + xA + " " + yA;
+  svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(mHi) + "L" + xT + " " + y(mLo) + back(mLo) + "Z", fill: "var(--s1)", opacity: 0.13 });
+  svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(m75) + "L" + xT + " " + y(m25) + back(m25) + "Z", fill: "var(--s1)", opacity: 0.20 });
   // one line per individual model
-  for (const m of view.members) svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(m), fill: "none", stroke: "var(--s1)", "stroke-width": 1.2, opacity: 0.45 });
+  for (const m of sorted) svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(m), fill: "none", stroke: "var(--s1)", "stroke-width": 1, opacity: sorted.length > 40 ? 0.22 : 0.4 });
   svgEl(svg, "path", { d: "M" + xA + " " + yA + curve(view.forecast), fill: "none", stroke: "var(--s1)", "stroke-width": 2.5 });
 
   // observed line (solid through verified days, dashed to today so far)
@@ -267,7 +285,6 @@ function drawConfidence() {
 
   // labels right of the fan, kept from overlapping
   const yF = y(view.forecast);
-  const ms = view.members.filter(m => m !== null), mHi = Math.max(...ms), mLo = Math.min(...ms);
   const yHi = Math.min(y(mHi) + 4, yF - 15), yLo = Math.max(y(mLo) + 4, yF + 23);
   svgEl(svg, "text", { x: xT + 14, y: yF + 5, class: "strong" }, fmt(view.forecast, k) + " " + unit);
   svgEl(svg, "text", { x: xT + 14, y: yHi, class: "ink" }, fmt(mHi, k) + "  highest");
@@ -288,7 +305,8 @@ function drawConfidence() {
       if (c.kind === "fc") {
         htmlEl(t, "div", "d", dayLabel(c.date) + "  ·  " + state.init);
         tipRow(t, "var(--s1)", fmt(view.forecast, k) + " " + unit, "our forecast");
-        if (ms.length) tipRow(t, null, fmt(Math.min(...ms), k) + " – " + fmt(Math.max(...ms), k), ms.length + " models");
+        tipRow(t, null, fmt(mLo, k) + " – " + fmt(mHi, k), "all " + sorted.length + " models");
+        tipRow(t, null, fmt(m25, k) + " – " + fmt(m75, k), "middle half");
       }
     });
   };
@@ -303,8 +321,7 @@ function errorOf(system, date, k) {
 }
 function drawCompare() {
   const k = state.variable, unit = VAR_UNIT[k];
-  segmented("varseg", VARS.map(v => ({ label: VAR_NAME[v], value: v })), "variable", drawAll);
-  segmented("viewseg", [{ label: "Error", value: "Error" }, { label: "Forecast", value: "Forecast" }], "view", drawAll);
+  segmented("viewseg", [{ label: "Daily error", value: "Error" }, { label: "Forecast vs observed", value: "Forecast" }], "view", drawAll);
   const chips = document.getElementById("chips");
   chips.replaceChildren();
   for (const s of SYSTEMS) {
@@ -317,8 +334,9 @@ function drawCompare() {
   const obsDays = DATA.obs.filter(o => o[k] !== null && SYSTEMS.some(s => errorOf(s, o.date, k) !== null));
   const isError = state.view === "Error";
   document.getElementById("hint2").textContent = isError
-    ? VAR_NAME[k] + ": forecast minus observed for each day. Above zero = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + "."
-    : VAR_NAME[k] + ": what each system forecast, against what was observed.";
+    ? "Each point = that day's forecast minus what was observed. On the zero line = perfect. Above = too " + (k === "WIND" ? "strong" : k === "PRCP" ? "wet" : "warm") + ". Hover a day for the numbers."
+    : "Uncolored line = observed. Colored lines = what each model forecast. The last day is tomorrow's forecast. Hover a day for the numbers.";
+  if (!isError) { const key = htmlEl(chips, "span", "key"); htmlEl(key, "i"); key.appendChild(document.createTextNode("Observed")); }
 
   const svg = document.getElementById("chart2");
   svg.replaceChildren();
@@ -376,13 +394,26 @@ function drawCompare() {
   svg.onpointerleave = () => { tip.style.display = "none"; hair.setAttribute("visibility", "hidden"); };
 
   // right-hand panel: trailing mean error per system
-  document.getElementById("panelhead").textContent = "Trailing error, last " + obsDays.length + " days (" + unit + ")";
+  document.getElementById("panelhead").textContent = "Closest first, last " + obsDays.length + " days (" + unit + ")";
   const table = document.getElementById("paneltable");
   table.replaceChildren();
   const head = htmlEl(table, "tr");
-  for (const h of ["", "Mean miss", "Bias", dayLabel(DATA.target).split(" ")[0] + " fcst"]) htmlEl(head, "th", "", h);
-  for (const s of SYSTEMS) {
+  for (const h of ["", "Avg miss", "Bias", "Tomorrow"]) htmlEl(head, "th", "", h);
+  const stats = SYSTEMS.map(s => {
     const errs = obsDays.map(o => errorOf(s, o.date, k)).filter(e => e !== null);
+    return { s: s, errs: errs, mae: errs.length ? errs.reduce((a, e) => a + Math.abs(e), 0) / errs.length : null };
+  }).sort((a, b) => (a.mae === null ? 1e9 : a.mae) - (b.mae === null ? 1e9 : b.mae));
+  const nd = k === "PRCP" ? 2 : 1, scored = stats.filter(r => r.mae !== null);
+  if (scored.length) {
+    const best = scored.filter(r => r.mae.toFixed(nd) === scored[0].mae.toFixed(nd)).map(r => r.s);
+    const ours = scored.find(r => r.s === "Ours"), rank = scored.indexOf(ours) + 1;
+    let text = "Over the last " + obsDays.length + " days, " + best.join(" and ") + (best.length > 1 ? " have" : " has") + " been closest on the " +
+      VAR_NAME[k].toLowerCase() + ", missing by " + scored[0].mae.toFixed(nd) + " " + unit + " on average.";
+    if (ours && !best.includes("Ours")) text += " Ours misses by " + ours.mae.toFixed(nd) + " " + unit + " (" + rank + " of " + scored.length + ").";
+    document.getElementById("insight2").textContent = text;
+  }
+  for (const row of stats) {
+    const s = row.s, errs = row.errs;
     const tr = htmlEl(table, "tr", state.on[s] ? "" : "off");
     const name = htmlEl(tr, "td", "name");
     const i = htmlEl(name, "i"); i.style.background = SYSTEM_COLOR[s];
@@ -395,8 +426,8 @@ function drawCompare() {
     htmlEl(tr, "td", "sm", f ? fmt(f[k], k) : "–");
   }
   document.getElementById("panelnote").textContent = k === "WIND"
-    ? "Mean miss = average size of the error. Raw model wind is 10 m sustained, not the contest 2-min max, so raw models run low."
-    : k === "PRCP" ? "Mean miss = average size of the error. MOS has no precip amount." : "Mean miss = average size of the error.";
+    ? "Avg miss = average size of the daily error. Bias = average with sign (+ = too high). Raw model wind is 10 m sustained, not the contest 2-min max, so raw models run low."
+    : k === "PRCP" ? "Avg miss = average size of the daily error. Bias = average with sign (+ = too high). MOS has no precip amount." : "Avg miss = average size of the daily error. Bias = average with sign (+ = too high).";
 }
 
 function drawAll() { drawHeader(); drawConfidence(); drawCompare(); }
